@@ -22,6 +22,7 @@ let
     inNixShell
     optionalAttrs
     optionals
+    optional
     removeSuffix
     splitString
     unique;
@@ -355,6 +356,7 @@ in rec {
     , version
     , src
     , python
+    , releng_common
     , buildInputs ? []
     , propagatedBuildInputs ? []
     , passthru ? {}
@@ -371,8 +373,9 @@ in rec {
           glibcLocales
           python.packages."flake8"
           python.packages."gunicorn"
-        ] ++ buildInputs;
-        propagatedBuildInputs = [] ++ propagatedBuildInputs;
+        ] ++ buildInputs 
+          ++ optional (builtins.elem "db" releng_common.extras) releng_pkgs.postgresql;
+        propagatedBuildInputs = [releng_common] ++ propagatedBuildInputs;
 
         patchPhase = ''
           rm VERSION
