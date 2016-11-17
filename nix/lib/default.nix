@@ -256,11 +256,12 @@ in rec {
   mkFrontend =
     { name
     , version
+    , srcCommon
     , src
     , node_modules
     , elm_packages
-    , patchPhase ? null
-    , postInstall ? null
+    , patchPhase ? ""
+    , postInstall ? ""
     }:
     let
       self = stdenv.mkDerivation {
@@ -271,6 +272,10 @@ in rec {
                     )
           src;
         buildInputs = [ elmPackages.elm ] ++ (builtins.attrValues node_modules);
+        patchPhase = ''
+          rm webpack.config.js
+          cp ${srcCommon}/webpack.config.js ./
+        '' + patchPhase;
         configurePhase = ''
           rm -rf node_modules
           rm -rf elm-stuff
@@ -288,7 +293,7 @@ in rec {
           cp build/* $out/ -R
           runHook postInstall
         '';
-        inherit postInstall patchPhase;
+        inherit postInstall;
         shellHook = ''
           cd src/${name}
         '' + self.configurePhase;

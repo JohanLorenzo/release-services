@@ -7,6 +7,8 @@ in
 
 let
 
+  postgresql = pkgs.postgresql95;
+
   releng_pkgs = {
 
     pkgs = pkgs // {
@@ -22,6 +24,17 @@ let
     lib = import ./lib/default.nix { inherit releng_pkgs; };
     tools = import ./tools/default.nix { inherit releng_pkgs; };
     elmPackages = pkgs.elmPackages.override { nodejs = pkgs."nodejs-6_x"; };
+    inherit postgresql;
+    postgresqlEnv = pkgs.stdenv.mkDerivation {
+      name = "env-${postgresql.name}";
+      buildInputs = [ postgresql ];
+      buildCommand = ''
+        mkdir -p $out/bin
+        for i in ${postgresql}/bin/*; do
+          ln -s $i $out/bin
+        done
+      '';
+    };
 
     releng_docs = import ./../src/releng_docs { inherit releng_pkgs; };
     releng_frontend = import ./../src/releng_frontend { inherit releng_pkgs; };

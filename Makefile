@@ -171,7 +171,7 @@ develop-run-FRONTEND: build-certs nix require-APP
 
 develop-run-releng_clobberer: require-sqlite develop-run-BACKEND
 develop-run-releng_tooltool: require-sqlite develop-run-BACKEND
-develop-run-releng_treestatus: require-sqlite develop-run-BACKEND
+develop-run-releng_treestatus: require-postgres develop-run-BACKEND
 develop-run-releng_mapper: require-sqlite develop-run-BACKEND
 develop-run-releng_archiver: require-sqlite develop-run-BACKEND
 develop-run-releng_frontend: develop-run-FRONTEND
@@ -190,8 +190,8 @@ develop-flask-shell: nix require-APP
 		nix-shell nix/default.nix -A $(APP) \
     --run "flask $(FLASK_CMD)"
 
-develop-run-postgres: nix require-APP require-initdb
-	nix-shell nix/default.nix -A $(APP) \
+develop-run-postgres: nix require-initdb
+	nix-shell nix/default.nix -A postgresqlEnv \
 		--run "postgres -D $(PWD)/tmp/postgres -h localhost -p $(APP_DEV_POSTGRES_PORT)"
 
 build-apps: $(foreach app, $(APPS), build-app-$(app))
@@ -294,8 +294,11 @@ deploy-production-releng_tooltool: deploy-production-HEROKU
 deploy-production-releng_treestatus: deploy-production-HEROKU
 deploy-production-releng_mapper: deploy-production-HEROKU
 deploy-production-releng_archiver: deploy-production-HEROKU
+
 deploy-production-shipit_frontend: deploy-production-S3
 deploy-production-shipit_dashboard: # deploy-production-HEROKU
+deploy-production-shipit_pipeline: # deploy-staging-HEROKU
+deploy-production-shipit_signoff: # deploy-staging-HEROKU
 
 
 
@@ -503,21 +506,21 @@ require-BRANCH:
 		exit 1; \
 	fi
 
-require-initdb: nix require-APP
+require-initdb: nix
 	$(eval PG_DATA := $(PWD)/tmp/postgres)
 	@if [ ! -d $(PG_DATA) ]; then \
-		nix-shell nix/default.nix -A $(APP) \
+		nix-shell nix/default.nix -A postgresqlEnv \
 			--run "initdb -D $(PG_DATA) --auth=trust"; \
 	fi
 
-require-sqlite: nix require-APP
+require-sqlite: nix
 	$(eval export DATABASE_URL=sqlite:///$(PWD)/app.db)
 	@echo "Using sqlite dev database $(DATABASE_URL)"
 
-require-postgres: nix require-APP
-	nix-shell nix/default.nix -A $(APP) \
-		--run "createdb -p $(APP_DEV_POSTGRES_PORT) $(APP)"; true
-	$(eval export DATABASE_URL=postgres://localhost:$(APP_DEV_POSTGRES_PORT)/$(APP))
+require-postgres: nix
+	nix-shell nix/default.nix -A postgresqlEnv \
+		--run "createdb -p $(APP_DEV_POSTGRES_PORT) mozilla-releng"; true
+	$(eval export DATABASE_URL=postgres://localhost:$(APP_DEV_POSTGRES_PORT)/mozilla-releng)
 	@echo "Using postgresql dev database $(DATABASE_URL)"
 
 

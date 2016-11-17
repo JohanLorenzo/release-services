@@ -12,6 +12,8 @@ DATABASE_URL = os.environ.get('DATABASE_URL')
 
 if not DATABASE_URL:
     raise Exception("You need to specify DATABASE_URL variable.")
+if not DATABASE_URL.startswith('postgres://'):
+    raise Exception('DATABASE_URL needs to startswith `postgres://`')
 
 
 SQLALCHEMY_DATABASE_URI = DATABASE_URL
